@@ -101,7 +101,7 @@ cd your-repo
     Apply the configuration:
 
     ```bash
-    kubectl apply -f metallb-config.yaml
+    kubectl apply -f deployment/metallb-config.yaml
     ```
 
 ### Docker Images
