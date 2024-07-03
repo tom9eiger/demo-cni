@@ -9,9 +9,17 @@ This project demonstrates a simple Kubernetes setup with a backend and frontend 
 - [Setup](#setup)
   - [Clone the Repository](#clone-the-repository)
   - [Docker Images](#docker-images)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
   - [Deploy to Kubernetes](#deploy-to-kubernetes)
+    - [Backend Deployment](#backend-deployment)
+    - [Frontend Deployment](#frontend-deployment)
+    - [Network Policy](#network-policy)
+    - [Demo Pod for Verification](#demo-pod-for-verification)
 - [Verify Network Policy](#verify-network-policy)
 - [Cleanup](#cleanup)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
 ## Prerequisites
 
