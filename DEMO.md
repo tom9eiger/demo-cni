@@ -43,3 +43,302 @@ Clone the repository to your local machine:
 ```bash
 git clone https://github.com/your-username/your-repo.git
 cd your-repo
+```
+
+### Docker Images
+
+#### Backend
+
+1. **Create `requirements.txt`**:
+
+   Create a `requirements.txt` file in the `backend` directory:
+
+   ```plaintext
+   flask
+   ```
+
+2. **Create `Dockerfile`**:
+
+   Create a `Dockerfile` in the `backend` directory:
+
+   ```dockerfile
+   FROM python:3.9-slim
+
+   WORKDIR /app
+
+   COPY requirements.txt requirements.txt
+   RUN pip install -r requirements.txt
+
+   COPY app.py /app
+
+   CMD ["python", "app.py"]
+   ```
+
+3. **Build and Push Docker Image**:
+
+   Build and push the Docker image for the backend application:
+
+   ```bash
+   cd backend
+   docker build -t ghcr.io/your-username/backend-demo:latest .
+   docker push ghcr.io/your-username/backend-demo:latest
+   cd ..
+   ```
+
+#### Frontend
+
+1. **Create `requirements.txt`**:
+
+   Create a `requirements.txt` file in the `frontend` directory:
+
+   ```plaintext
+   flask
+   requests
+   ```
+
+2. **Create `Dockerfile`**:
+
+   Create a `Dockerfile` in the `frontend` directory:
+
+   ```dockerfile
+   FROM python:3.9-slim
+
+   WORKDIR /app
+
+   COPY requirements.txt requirements.txt
+   RUN pip install -r requirements.txt
+
+   COPY frontend.py /app
+
+   CMD ["python", "frontend.py"]
+   ```
+
+3. **Build and Push Docker Image**:
+
+   Build and push the Docker image for the frontend application:
+
+   ```bash
+   cd frontend
+   docker build -t ghcr.io/your-username/frontend-demo:latest .
+   docker push ghcr.io/your-username/frontend-demo:latest
+   cd ..
+   ```
+
+### Deploy to Kubernetes
+
+#### Backend Deployment
+
+1. **Create `backend-deployment.yaml`**:
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: flask-api
+   spec:
+     replicas: 3
+     selector:
+       matchLabels:
+         app: flask-api
+     template:
+       metadata:
+         labels:
+           app: flask-api
+       spec:
+         containers:
+         - name: flask-api
+           image: ghcr.io/your-username/backend-demo:latest
+           ports:
+           - containerPort: 80
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: flask-api-service
+   spec:
+     selector:
+       app: flask-api
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 80
+     type: ClusterIP
+   ```
+
+2. **Apply Backend Deployment**:
+
+   ```bash
+   kubectl apply -f deployment/backend-deployment.yaml
+   kubectl apply -f deployment/backend-service.yaml
+   ```
+
+#### Frontend Deployment
+
+1. **Create `frontend-deployment.yaml`**:
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: frontend
+   spec:
+     replicas: 1
+     selector:
+       matchLabels:
+         app: frontend
+     template:
+       metadata:
+         labels:
+           app: frontend
+       spec:
+         containers:
+         - name: frontend
+           image: ghcr.io/your-username/frontend-demo:latest
+           ports:
+           - containerPort: 80
+   ---
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: frontend-service
+   spec:
+     selector:
+       app: frontend
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 80
+     type: LoadBalancer
+   ```
+
+2. **Apply Frontend Deployment**:
+
+   ```bash
+   kubectl apply -f deployment/frontend-deployment.yaml
+   kubectl apply -f deployment/frontend-service.yaml
+   ```
+
+#### Network Policy
+
+1. **Create `network-policy.yaml`**:
+
+   ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: NetworkPolicy
+   metadata:
+     name: allow-frontend-to-backend
+   spec:
+     podSelector:
+       matchLabels:
+         app: backend
+     policyTypes:
+     - Ingress
+     ingress:
+     - from:
+         podSelector:
+           matchLabels:
+             app: frontend
+       ports:
+       - protocol: TCP
+         port: 80
+   ```
+
+2. **Apply Network Policy**:
+
+   ```bash
+   kubectl apply -f deployment/network-policy.yaml
+   ```
+
+#### Demo Pod for Verification
+
+1. **Create `demo-pod.yaml`**:
+
+   ```yaml
+   apiVersion: v1
+   kind: Namespace
+   metadata:
+     name: demo-namespace
+   ---
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: demo-pod
+     namespace: demo-namespace
+   spec:
+     containers:
+     - name: demo-container
+       image: busybox
+       command: ["sh", "-c", "sleep 3600"]
+   ```
+
+2. **Apply Demo Pod**:
+
+   ```bash
+   kubectl apply -f deployment/demo-pod.yaml
+   ```
+
+## Verify Network Policy
+
+1. **Test from Demo Pod**:
+
+   Execute a shell inside the demo pod to test connectivity to the backend service:
+
+   ```bash
+   kubectl exec -it demo-pod -n demo-namespace -- sh
+   ```
+
+   Inside the shell, try to connect to the backend service:
+
+   ```sh
+   wget -qO- http://flask-api-service.default.svc.cluster.local/api
+   ```
+
+   You should see that the connection is refused or times out, demonstrating that the network policy is effectively blocking traffic from the demo pod to the backend service.
+
+2. **Test from Frontend Pod**:
+
+   Similarly, you can verify that the frontend pod can communicate with the backend service.
+
+   ```bash
+   kubectl exec -it <frontend-pod-name> -- sh
+   ```
+
+   Inside the shell, try to connect to the backend service:
+
+   ```sh
+   wget -qO- http://flask-api-service.default.svc.cluster.local/api
+   ```
+
+   You should see a successful response from the backend service.
+
+## Cleanup
+
+To clean up the resources, delete the created Kubernetes resources and namespaces:
+
+```bash
+kubectl delete -f deployment/backend-deployment.yaml
+kubectl delete -f deployment/backend-service.yaml
+kubectl delete -f deployment/frontend-deployment.yaml
+kubectl delete -f deployment/frontend-service.yaml
+kubectl delete -f deployment/network-policy.yaml
+kubectl delete namespace demo-namespace
+```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Flask](https://flask.palletsprojects.com/)
+- [Kubernetes](https://kubernetes.io/)
+
+This `DEMO.md` includes instructions for:
+
+- Cloning the repository.
+- Building and pushing Docker images for both the backend and frontend applications.
+- Deploying the applications and network policy to a Kubernetes cluster.
+- Verifying the network policy.
+- Cleaning up resources.
+
+This should provide a comprehensive guide for anyone looking to understand and deploy the project.
