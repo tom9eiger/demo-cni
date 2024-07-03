@@ -151,19 +151,22 @@ cd your-repo
 1. **Get the Cluster IP and End Point Adresses**:
 
    ```bash
-    # Login to minikube
-    minikube ssh
-
     # Get Kubernetes Service
-    docker@minikube:~$ kubectl get svc
+    kubectl get svc -n demo-cni-app
 
     # Get the endpoints
-    docker@minikube:~$ kubectl get ep
+    kubectl get ep -n demo-cni-app
    ```
+   min
 2. **Get the prerouting Rule for KUBE-SERVICE**:
 
    ```bash
-    docker@minikube:~$ sudo iptables -t nat -L KUBE-SERVICES
+    # Login to minikube
+    minikube ssh
+   ```
+
+   ```bash
+    sudo iptables -t nat -L KUBE-SERVICES
     Chain KUBE-SERVICES (2 references)
     target     prot opt source               destination         
     KUBE-SVC-NPX46M4PTMTKRN6Y  tcp  --  anywhere             10.96.0.1            /* default/kubernetes:https cluster IP */ tcp dpt:https
@@ -177,7 +180,7 @@ cd your-repo
 3. **Get the NAT Rule for ClusterIP**:
 
    ```bash
-    docker@minikube:~$ sudo iptables -t nat -L KUBE-SVC-6YNYFUIKGNIA7RFX
+    sudo iptables -t nat -L KUBE-SVC-6YNYFUIKGNIA7RFX
     Chain KUBE-SVC-6YNYFUIKGNIA7RFX (1 references)
     target     prot opt source               destination         
     KUBE-MARK-MASQ  tcp  -- !10.244.0.0/16        10.108.198.28        /* demo-cni-app/flask-api-service cluster IP */ tcp dpt:http
@@ -186,20 +189,24 @@ cd your-repo
 4. **Get the Rule for the Service End Point**:
 
    ```bash
-    docker@minikube:~$ sudo iptables -t nat -L KUBE-SEP-J7YQFRES3OILODCJ
+    sudo iptables -t nat -L KUBE-SEP-J7YQFRES3OILODCJ
     Chain KUBE-SEP-J7YQFRES3OILODCJ (1 references)
     target     prot opt source               destination         
     KUBE-MARK-MASQ  all  --  10.244.0.3           anywhere             /* demo-cni-app/flask-api-service */
     DNAT       tcp  --  anywhere             anywhere             /* demo-cni-app/flask-api-service */ tcp to:10.244.0.3:80
    ```
-
+   ```bash
+    # Exit minikube
+    exit
+   ```
 ### Demo Network Policy (CNI)
 In this Demo we will work with Network Policy and how Network Policy effects traffic between Pods
 
 1. **Apply Demo Pod**:
 
    ```bash
-   kubectl apply -f deployment/demo-pod.yaml
+   kubectl apply -f deployment/debug-pod-namespace.yaml
+   kubectl apply -f deployment/debug-pod.yaml
    ```
 
 2. **Test from demo pod without policy**:
@@ -207,13 +214,13 @@ In this Demo we will work with Network Policy and how Network Policy effects tra
    Execute a shell inside the demo pod to test connectivity to the backend service:
 
    ```bash
-   kubectl exec -it demo-pod -n demo-namespace -- sh
+   kubectl exec -it debug-pod -n debug-pod -- sh
    ```
 
    Inside the shell, try to connect to the backend service:
 
    ```sh
-   wget -qO- http://flask-api-service.default.svc.cluster.local/api
+   wget -qO- http://flask-api-service.demo-cni-app.svc.cluster.local/api
    ```
 
    You should see that the connection is succesfull
@@ -230,33 +237,17 @@ In this Demo we will work with Network Policy and how Network Policy effects tra
    Execute a shell inside the demo pod to test connectivity to the backend service:
 
    ```bash
-   kubectl exec -it demo-pod -n demo-namespace -- sh
+   kubectl exec -it debug-pod -n debug-pod -- sh
    ```
 
    Inside the shell, try to connect to the backend service:
 
    ```sh
-   wget -qO- http://flask-api-service.default.svc.cluster.local/api
+   wget -T5 -qO- http://flask-api-service.demo-cni-app.svc.cluster.local/api
    ```
 
    You should see that the connection is refused or times out, demonstrating that the network policy is effectively blocking traffic from the demo pod to the backend service.
-
-5. **Test from Frontend Pod**:
-
-   Similarly, you can verify that the frontend pod can communicate with the backend service.
-
-   ```bash
-   kubectl exec -it <frontend-pod-name> -- sh
-   ```
-
-   Inside the shell, try to connect to the backend service:
-
-   ```sh
-   wget -qO- http://flask-api-service.default.svc.cluster.local/api
-   ```
-
-   You should see a successful response from the backend service.
-
+ku
 ## Cleanup
 
 To clean up the resources, delete the created Kubernetes resources and namespaces:

@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    response = requests.get('http://flask-api-service.default.svc.cluster.local/api')
+    response = requests.get('http://flask-api-service.demo-cni-app.svc.cluster.local/api')
     return render_template_string("""
         <html>
             <body>
