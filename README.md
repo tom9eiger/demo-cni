@@ -9,12 +9,8 @@ This project demonstrates a simple Kubernetes setup with a backend and frontend 
 - [Setup](#setup)
   - [Clone the Repository](#clone-the-repository)
   - [Setup Minikub](#setup-minikube)
-  - [Docker Images](#docker-images)
-    - [Backend](#backend)
-    - [Frontend](#frontend)
+  - [Docker Images](#docker-images))
   - [Deploy to Kubernetes](#deploy-to-kubernetes)
-    - [Backend Deployment](#backend-deployment)
-    - [Frontend Deployment](#frontend-deployment)
 - [Demo Kubernetes Services](#demo-kubernetes-services)
   - [Demo Service Plugin (kube-proxy)](#demo-service-plugin-kube-proxy)
   - [Demo Network Policy (CNI)](#demo-network-policy-cni)
@@ -106,9 +102,7 @@ cd your-repo
 
 ### Docker Images
 
-#### Backend
-
-**Build and Push Docker Image**:
+1. **Build and Push Docker Image for backend**:
 
    Build and push the Docker image for the backend application:
 
@@ -118,10 +112,7 @@ cd your-repo
    docker push ghcr.io/your-username/backend-demo:latest
    cd ..
    ```
-
-#### Frontend
-
-**Build and Push Docker Image**:
+2. **Build and Push Docker Image for frontend**:
 
    Build and push the Docker image for the frontend application:
 
@@ -134,18 +125,20 @@ cd your-repo
 
 ### Deploy to Kubernetes
 
-#### Backend Deployment
+1. **Apply Namespace**:
+
+   ```bash
+   kubectl apply -f deployment/app-namespace.yaml
+   ```
   
-**Apply Backend Deployment**:
+2. **Apply Backend Deployment**:
 
    ```bash
    kubectl apply -f deployment/backend-deployment.yaml
    kubectl apply -f deployment/backend-service.yaml
    ```
 
-#### Frontend Deployment
-
-**Apply Frontend Deployment**:
+3. **Apply Frontend Deployment**:
 
    ```bash
    kubectl apply -f deployment/frontend-deployment.yaml
