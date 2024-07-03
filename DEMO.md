@@ -217,10 +217,98 @@ cd your-repo
    kubectl apply -f deployment/frontend-deployment.yaml
    kubectl apply -f deployment/frontend-service.yaml
    ```
+## Demo Kubernetes Services
 
-#### Network Policy
+### Demo Service Plugin (kube-proxy)
 
-1. **Create `network-policy.yaml`**:
+1. **Get the Cluster IP and End Point Adresses**:
+
+   ```bash
+    # Get Kubernetes Service
+    docker@minikube:~$ kubectl get svc
+
+    # Get the endpoints
+    docker@minikube:~$ kubectl get ep
+   ```
+2. **Get the prerouting Rule for KUBE-SERVICE**:
+
+   ```bash
+    docker@minikube:~$ sudo iptables -t nat -L KUBE-SERVICES
+    Chain KUBE-SERVICES (2 references)
+    target     prot opt source               destination         
+    KUBE-SVC-NPX46M4PTMTKRN6Y  tcp  --  anywhere             10.96.0.1            /* default/kubernetes:https cluster IP */ tcp dpt:https
+    KUBE-SVC-TCOU7JCQXEZGVUNU  udp  --  anywhere             10.96.0.10           /* kube-system/kube-dns:dns cluster IP */ udp dpt:domain
+    KUBE-SVC-ERIFXISQEP7F7OF4  tcp  --  anywhere             10.96.0.10           /* kube-system/kube-dns:dns-tcp cluster IP */ tcp dpt:domain
+    KUBE-SVC-JD5MR3NA4I4DYORP  tcp  --  anywhere             10.96.0.10           /* kube-system/kube-dns:metrics cluster IP */ tcp dpt:9153
+    KUBE-SVC-6YNYFUIKGNIA7RFX  tcp  --  anywhere             10.108.198.28        /* demo-cni-app/flask-api-service cluster IP */ tcp dpt:http
+    KUBE-NODEPORTS  all  --  anywhere             anywhere             /* kubernetes service nodeports; NOTE: this must be the last rule in this chain */ ADDRTYPE match dst-type LOCAL
+   ```
+
+3. **Get the NAT Rule for ClusterIP**:
+
+   ```bash
+    docker@minikube:~$ sudo iptables -t nat -L KUBE-SVC-6YNYFUIKGNIA7RFX
+    Chain KUBE-SVC-6YNYFUIKGNIA7RFX (1 references)
+    target     prot opt source               destination         
+    KUBE-MARK-MASQ  tcp  -- !10.244.0.0/16        10.108.198.28        /* demo-cni-app/flask-api-service cluster IP */ tcp dpt:http
+    KUBE-SEP-J7YQFRES3OILODCJ  all  --  anywhere             anywhere             /* demo-cni-app/flask-api-service -> 10.244.0.3:80 */
+   ```
+4. **Get the Rule for the Service End Point**:
+
+   ```bash
+    docker@minikube:~$ sudo iptables -t nat -L KUBE-SEP-J7YQFRES3OILODCJ
+    Chain KUBE-SEP-J7YQFRES3OILODCJ (1 references)
+    target     prot opt source               destination         
+    KUBE-MARK-MASQ  all  --  10.244.0.3           anywhere             /* demo-cni-app/flask-api-service */
+    DNAT       tcp  --  anywhere             anywhere             /* demo-cni-app/flask-api-service */ tcp to:10.244.0.3:80
+   ```
+
+### Demo Network Policy (CNI)
+In this Demo we will work with Network Policy and how Network Policy effects traffic between Pods
+
+1. **Create `demo-pod.yaml`**:
+
+   ```yaml
+   apiVersion: v1
+   kind: Namespace
+   metadata:
+     name: demo-namespace
+   ---
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: demo-pod
+     namespace: demo-namespace
+   spec:
+     containers:
+     - name: demo-container
+       image: busybox
+       command: ["sh", "-c", "sleep 3600"]
+   ```
+
+2. **Apply Demo Pod**:
+
+   ```bash
+   kubectl apply -f deployment/demo-pod.yaml
+   ```
+
+3. **Test from demo pod without policy**:
+
+   Execute a shell inside the demo pod to test connectivity to the backend service:
+
+   ```bash
+   kubectl exec -it demo-pod -n demo-namespace -- sh
+   ```
+
+   Inside the shell, try to connect to the backend service:
+
+   ```sh
+   wget -qO- http://flask-api-service.default.svc.cluster.local/api
+   ```
+
+   You should see that the connection is succesfull
+
+3. **Create `network-policy.yaml`**:
 
    ```yaml
    apiVersion: networking.k8s.io/v1
@@ -249,33 +337,7 @@ cd your-repo
    kubectl apply -f deployment/network-policy.yaml
    ```
 
-#### Demo Pod for Verification
 
-1. **Create `demo-pod.yaml`**:
-
-   ```yaml
-   apiVersion: v1
-   kind: Namespace
-   metadata:
-     name: demo-namespace
-   ---
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: demo-pod
-     namespace: demo-namespace
-   spec:
-     containers:
-     - name: demo-container
-       image: busybox
-       command: ["sh", "-c", "sleep 3600"]
-   ```
-
-2. **Apply Demo Pod**:
-
-   ```bash
-   kubectl apply -f deployment/demo-pod.yaml
-   ```
 
 ## Verify Network Policy
 

@@ -1,19 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: flask-api
+  name: frontend
+  namespace: demo-cni-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: flask-api
+      app: frontend
   template:
     metadata:
       labels:
-        app: flask-api
+        app: frontend
     spec:
       containers:
-      - name: flask-api
-        image: ghcr.io/tom9eiger/backend-demo:latest
+      - name: frontend
+        image: ghcr.io/tom9eiger/frontend-demo:latest
         ports:
         - containerPort: 80
