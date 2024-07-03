@@ -16,5 +16,6 @@ spec:
       containers:
       - name: frontend
         image: ghcr.io/tom9eiger/frontend-demo:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80

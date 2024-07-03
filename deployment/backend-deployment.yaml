@@ -4,7 +4,7 @@ metadata:
   name: flask-api
   namespace: demo-cni-app
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: flask-api
@@ -16,5 +16,6 @@ spec:
       containers:
       - name: flask-api
         image: ghcr.io/tom9eiger/backend-demo:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
