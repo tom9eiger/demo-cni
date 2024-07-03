@@ -49,10 +49,10 @@ cd your-repo
 
 1. **Start Minikube with Calico**:
 
-    Start Minikube with the Calico CNI plugin:
+    Start Minikube with 1 Control Plane Node and 3 Worker Nodes  the Calico CNI plugin:
 
     ```bash
-    minikube start --network-plugin=cni --cni=calico
+    minikube start --network-plugin=cni --cni=calico --nodes=4
     ```
 
     Verify that Calico is running:
